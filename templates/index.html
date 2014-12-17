@@ -3,7 +3,10 @@
 Joystick test
 <script type="text/javascript" src="{{ url_for('static', filename='jquery-2.1.1.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='virtualjoystick.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='gauge.min.js') }}"></script>
 <script>
+var iSpeed;
+iSpeed = 0;
 
 var joystick_L	= new VirtualJoystick({
   container	: document.body,
@@ -15,7 +18,7 @@ var joystick_L	= new VirtualJoystick({
 
 joystick_L.addEventListener('touchStartValidation', function(event){
   var touch	= event.changedTouches[0];
-  if( touch.pageX < window.innerWidth/2 )	return false;
+  if( touch.pageX > window.innerWidth/3 )	return false;
   return true
 });
 
@@ -31,22 +34,27 @@ var joystick_R	= new VirtualJoystick({
   stickRadius	: 120,
   mouseSupport: true
 });
+
 joystick_R.addEventListener('touchStartValidation', function(event){
   var touch	= event.changedTouches[0];
-  if( touch.pageX >= window.innerWidth/2 )	return false;
+  if( touch.pageX < window.innerWidth/3*2 )	return false;
   return true
 });
 
 setInterval(function(){
   if ((joystick_L.up() || joystick_L.down()) || (joystick_R.up() || joystick_R.down())){
+    var iSpeedLeft = Math.abs(Math.round(joystick_L.deltaY() / 2));
+    var iSpeedRight = Math.abs(Math.round(joystick_R.deltaY() / 2));
+    iSpeed = (iSpeedLeft > iSpeedRight) ? iSpeedLeft : iSpeedRight;
+    
     $.ajax({
-      url: '/motors_con/' + Math.round(joystick_L.deltaY()).toString() + '+' + Math.round(joystick_R.deltaY()).toString()
+      url: '/motors_con/' + iSpeedLeft.toString() + '+' + iSpeedRight.toString()
     }).done(function(msg) {
       $('#info').html(msg);  
     });
   }
   else {
-    
+    iSpeed = 0; 
     $.ajax({
       url: '/motors_con/0+0'
     }).done(function(msg) {
@@ -57,5 +65,34 @@ setInterval(function(){
 
 </script>
 <div id="info">Info 1</div>
+<table id="tblMain" border="0" width="100%">
+  <tr>
+    <td width="34%" height="600"><div id="JS_L">&nbsp;</div></td>
+    <td>
+      <div align="center">
+    	  <canvas id="gauge1" width="400" height="400"
+      		data-type="canv-gauge"
+		      data-title="Speed"
+		      data-min-value="0"
+		      data-max-value="60"
+		      data-major-ticks="5 10 15 20 25 30 35 40 45 50 55 60"
+		      data-minor-ticks="10"
+		      data-stroke-ticks="true"
+		      data-units="Km/h"
+		      data-value-format="3.2"
+		      data-glow="true"
+		      data-animation-delay="10"
+		      data-animation-duration="200"
+		      data-animation-fn="linear"
+		      data-colors-needle="#f00 #00f"
+		      data-colors-title="#00f"
+		      data-highlights="20 30 #eee, 30 60 #ccc, 60 90 #aaa, 90 220 #eaa"
+		      data-onready="setInterval( function() { Gauge.Collection.get('gauge1').setValue(iSpeed);}, 300);">
+        </canvas>
+      </div>
+    </td>
+    <td width="34%" height="600"><div id="JS_R">&nbsp;</div></td>
+  </tr>
+</table>
 </body>
 </html>
