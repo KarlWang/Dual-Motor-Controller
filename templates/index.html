@@ -1,0 +1,61 @@
+<html > 
+<body> 
+Joystick test
+<script type="text/javascript" src="{{ url_for('static', filename='jquery-2.1.1.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='virtualjoystick.js') }}"></script>
+<script>
+
+var joystick_L	= new VirtualJoystick({
+  container	: document.body,
+  strokeStyle	: 'red',
+  limitStickTravel: true,
+  stickRadius	: 120,
+  mouseSupport: true
+});
+
+joystick_L.addEventListener('touchStartValidation', function(event){
+  var touch	= event.changedTouches[0];
+  if( touch.pageX < window.innerWidth/2 )	return false;
+  return true
+});
+
+joystick_L.addEventListener('touchMove', function(event) {
+  event.preventDefault();
+  document.getElementById('info').innerHTML = (joystick_L.up() ? ' UP ':' - ');
+});
+
+var joystick_R	= new VirtualJoystick({
+  container	: document.body,
+  strokeStyle	: 'blue',
+  limitStickTravel: true,
+  stickRadius	: 120,
+  mouseSupport: true
+});
+joystick_R.addEventListener('touchStartValidation', function(event){
+  var touch	= event.changedTouches[0];
+  if( touch.pageX >= window.innerWidth/2 )	return false;
+  return true
+});
+
+setInterval(function(){
+  if ((joystick_L.up() || joystick_L.down()) || (joystick_R.up() || joystick_R.down())){
+    $.ajax({
+      url: '/motors_con/' + Math.round(joystick_L.deltaY()).toString() + '+' + Math.round(joystick_R.deltaY()).toString()
+    }).done(function(msg) {
+      $('#info').html(msg);  
+    });
+  }
+  else {
+    
+    $.ajax({
+      url: '/motors_con/0+0'
+    }).done(function(msg) {
+      $('#info').html('STOP!!' + msg);  
+    });
+  }
+}, 1/3 * 1000);
+
+</script>
+<div id="info">Info 1</div>
+</body>
+</html>
